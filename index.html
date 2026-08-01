@@ -106,8 +106,8 @@ function addOrderMenu(name){if(!name)return;orderMenus=[...new Set([...orderMenu
 function clearOrderMenus(){orderMenus=[];localStorage.removeItem('orderMenus');updateOrderMenuSummary()}
 function menuNamesFromMemo(value){return String(value||'').split(',').map(x=>x.trim()).filter(Boolean)}
 function mergeOrderMenuMemo(existing,name){return [...new Set([...menuNamesFromMemo(existing),name].filter(Boolean))].join(', ')}
-function orderMenuLabel(){if(orderMenus.length)return orderMenus.join(', ');const selected=recipeSelect?.value,selectedItems=selected&&recipes[selected]||[];if(selectedItems.length&&orders.some(order=>selectedItems.some(item=>norm(Array.isArray(item)?item[0]:item.name)===norm(order.item))))return selected;return '수동 추가 또는 메뉴 반영 전'}
-function currentMenuMemo(){const label=orderMenuLabel();return label==='수동 추가 또는 메뉴 반영 전'?'':label}
+function orderMenuLabel(){if(orderMenus.length)return orderMenus.join(', ');const selected=recipeSelect?.value;if(orders.length&&selected)return selected;return '수동 추가'}
+function currentMenuMemo(){const label=orderMenuLabel();return label==='수동 추가'?'':label}
 function updateOrderMenuSummary(){if(!orderMenuSummary)return;orderMenuSummary.innerHTML=`<span>반영 메뉴</span><b>${escapeHtml(orderMenuLabel())}</b>`}
 function stock(name,unit){return inventory.find(x=>norm(x.name)===norm(name)&&x.unit===unit)}
 const unitList=['g','kg','ml','L','개','인분','큰술','작은술','컵','모','봉지','팩','장','대','통'];
