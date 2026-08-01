@@ -106,8 +106,9 @@ function addOrderMenu(name){if(!name)return;orderMenus=[...new Set([...orderMenu
 function clearOrderMenus(){orderMenus=[];localStorage.removeItem('orderMenus');updateOrderMenuSummary()}
 function menuNamesFromMemo(value){return String(value||'').split(',').map(x=>x.trim()).filter(Boolean)}
 function mergeOrderMenuMemo(existing,name){return [...new Set([...menuNamesFromMemo(existing),name].filter(Boolean))].join(', ')}
-function orderMenuLabel(){if(orderMenus.length)return orderMenus.join(', ');const selected=recipeSelect?.value;if(orders.length&&selected)return selected;return '수동 추가'}
-function currentMenuMemo(){const label=orderMenuLabel();return label==='수동 추가'?'':label}
+function orderMenuLabel(){if(orderMenus.length)return orderMenus.join(', ');return orders.length?'메뉴 확인 필요':'수동 추가'}
+function currentMenuMemo(){const label=orderMenuLabel();return ['수동 추가','메뉴 확인 필요'].includes(label)?'':label}
+function inferredMenusForOrderItem(item,logs){const names=new Set();logs.forEach(log=>{const payload=log.payload||{},items=Array.isArray(payload.order_items)?payload.order_items:[];if(payload.menu&&items.some(x=>norm(x.item)===norm(item.item_name)&&(!x.unit||x.unit===item.unit)))names.add(payload.menu)});return [...names]}
 function updateOrderMenuSummary(){if(!orderMenuSummary)return;orderMenuSummary.innerHTML=`<span>반영 메뉴</span><b>${escapeHtml(orderMenuLabel())}</b>`}
 function stock(name,unit){return inventory.find(x=>norm(x.name)===norm(name)&&x.unit===unit)}
 const unitList=['g','kg','ml','L','개','인분','큰술','작은술','컵','모','봉지','팩','장','대','통'];
@@ -129,6 +130,8 @@ async function loadAll(){
       dbRun(db.from('inventory').select('*').order('name')),
       dbRun(db.from('draft_orders').select('*').order('id'))
     ]);
+    let menuLogRows=[];
+    try{menuLogRows=await dbRun(db.from('audit_logs').select('created_at,action,payload').order('created_at',{ascending:false}).limit(1000));const lastClear=menuLogRows.find(x=>x.action==='clear_draft_orders')?.created_at;if(lastClear)menuLogRows=menuLogRows.filter(x=>x.created_at>lastClear&&x.action==='apply_menu_to_order')}catch(e){console.warn('draft order menu history is not available',e)}
     let finalOrderRows=[];
     try{finalOrderRows=await dbRun(db.from('final_orders').select('*').order('ordered_at',{ascending:false}).order('id',{ascending:false}))}catch(e){console.warn('final_orders table is not ready yet',e)}
     recipes={};
@@ -138,9 +141,12 @@ async function loadAll(){
       if(recipe)recipes[recipe.name].push({name:i.name,qty:Number(i.qty),unit:i.unit,type:i.ingredient_type});
     });
     inventory=inventoryRows.map(x=>({id:x.id,name:x.name,qty:Number(x.qty),unit:x.unit,_savedQty:Number(x.qty),_savedUnit:x.unit}));
-    const dbMenus=[...new Set(orderRows.flatMap(x=>menuNamesFromMemo(x.memo)))];
-    if(dbMenus.length){orderMenus=dbMenus;saveOrderMenus()}
-    orders=orderRows.map(x=>({id:x.id,item:x.item_name,qty:Number(x.qty),unit:x.unit,amount:Number(x.order_amount ?? x.unit_price)||0,type:x.ingredient_type||'main',memo:x.memo||''}));
+    const orderRowsWithMenus=orderRows.map(x=>({...x,inferred_memo:inferredMenusForOrderItem(x,menuLogRows).join(', ')}));
+    const dbMenus=[...new Set(orderRowsWithMenus.flatMap(x=>menuNamesFromMemo(x.memo||x.inferred_memo)))];
+    orderMenus=dbMenus;saveOrderMenus();
+    orders=orderRowsWithMenus.map(x=>({id:x.id,item:x.item_name,qty:Number(x.qty),unit:x.unit,amount:Number(x.order_amount ?? x.unit_price)||0,type:x.ingredient_type||'main',memo:x.memo||x.inferred_memo||''}));
+    const memoBackfills=orderRowsWithMenus.filter(x=>!x.memo&&x.inferred_memo).map(x=>db.from('draft_orders').update({memo:x.inferred_memo}).eq('id',x.id));
+    if(memoBackfills.length)await Promise.all(memoBackfills);
     finalOrders=finalOrderRows.map(x=>({id:x.id,orderNo:x.order_no,item:x.item_name,qty:Number(x.qty),unit:x.unit,amount:Number(x.order_amount)||0,type:x.ingredient_type||'main',status:x.status||'ordered',orderedAt:x.ordered_at,memo:x.memo||''}));
     if(!orderRows.length)clearOrderMenus();else updateOrderMenuSummary();
     populate();calculate();renderOrders();renderFinalOrders();renderInv();renderRecipes();
