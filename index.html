@@ -30,7 +30,10 @@ main{max-width:1440px}
 #finalOrders td[data-label="메뉴명"]{font-weight:600}
 #finalOrders td[data-label="발주일시"]{color:#6b7280;white-space:nowrap}
 #finalOrders td[data-label="상태"] select{font-weight:700}
+#finalOrders td[data-label="상태"] select{min-width:0;width:100%;padding:8px 28px 8px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#finalOrders td[data-label="발주번호"],#finalOrders td[data-label="발주일시"]{overflow:hidden;text-overflow:ellipsis}
 @media(max-width:720px){main{max-width:none}#finalOrders .finalOrderHeader h2{font-size:22px}#finalOrders table{font-size:14px}}
+@media(max-width:720px){#finalOrders table.responsive-table td[data-label="발주번호"],#finalOrders table.responsive-table td[data-label="발주일시"]{grid-template-columns:80px minmax(0,1fr);white-space:nowrap;word-break:normal}#finalOrders table.responsive-table td[data-label="상태"] select{font-size:14px;min-height:38px;padding-top:7px;padding-bottom:7px}}
 </style>
 </head>
 <body>
