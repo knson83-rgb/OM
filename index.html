@@ -166,7 +166,7 @@ function closeRecipeSearch(){recipeSearchList.classList.add('hidden');recipeSear
 function openRecipeSearch(){renderRecipeSearch(recipeSearchInput.value);recipeSearchList.classList.remove('hidden');recipeSearchInput.setAttribute('aria-expanded','true')}
 function chooseRecipe(name,shouldLog=false){if(!name||!recipes[name])return;recipeSelect.value=name;recipeSearchInput.value=name;closeRecipeSearch();calculate(shouldLog)}
 function renderRecipeSearch(query=''){const q=norm(query),names=recipeNames(),matches=(q?names.filter(name=>norm(name).includes(q)):names).slice(0,40);recipeSearchList.innerHTML=matches.length?matches.map((name,i)=>`<button type="button" class="combo-option${name===recipeSelect.value?' active':''}" role="option" data-name="${escapeHtml(name)}" aria-selected="${name===recipeSelect.value?'true':'false'}">${escapeHtml(name)}</button>`).join(''):`<div class="combo-empty">검색 결과가 없습니다.</div>`;recipeSearchList.querySelectorAll('.combo-option').forEach(btn=>btn.onclick=()=>chooseRecipe(btn.dataset.name,false))}
-function populate(){const names=recipeNames();recipeSelect.innerHTML=names.map(x=>`<option>${escapeHtml(x)}</option>`).join('');if(names.length&&!recipeSelect.value)recipeSelect.value=names[0];recipeSearchInput.value=recipeSelect.value||'';renderRecipeSearch('')}
+function populate(){const names=recipeNames();recipeSelect.innerHTML='<option value="">메뉴를 선택하세요</option>'+names.map(x=>`<option>${escapeHtml(x)}</option>`).join('');recipeSelect.value='';recipeSearchInput.value='';renderRecipeSearch('')}
 async function loadAll(){
   if(!db){setTopStatus('데이터 저장 설정을 확인하세요.','#dc2626');return}
   try{

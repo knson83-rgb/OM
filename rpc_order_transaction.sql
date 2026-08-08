@@ -162,7 +162,7 @@ begin
   from public.draft_orders
   order by id;
 
-  delete from public.draft_orders;
+  delete from public.draft_orders where true;
 
   return jsonb_build_object(
     'order_no', order_no_value,
