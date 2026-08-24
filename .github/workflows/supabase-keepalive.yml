@@ -1,0 +1,24 @@
+name: Supabase Keep-Alive
+
+on:
+  schedule:
+    - cron: '0 1 * * 1,4'  # 매주 월·목 01:00 UTC (비활성 7일 제한 방지)
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ping Supabase
+        run: |
+          URL=$(grep -oP '(?<=url: ")[^"]+' config.js)
+          KEY=$(grep -oP '(?<=key: ")[^"]+' config.js)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: $KEY" \
+            -H "Authorization: Bearer $KEY" \
+            "$URL/rest/v1/inventory?select=id&limit=1")
+          echo "Supabase ping status: $STATUS"
+          [ "$STATUS" = "200" ] && echo "Supabase is active." || { echo "Unexpected status: $STATUS"; exit 1; }
