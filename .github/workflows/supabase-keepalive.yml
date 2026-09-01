@@ -13,6 +13,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Ping Supabase
+        id: ping
         run: |
           URL=$(grep -oP '(?<=url: ")[^"]+' config.js)
           KEY=$(grep -oP '(?<=key: ")[^"]+' config.js)
@@ -22,3 +23,19 @@ jobs:
             "$URL/rest/v1/inventory?select=id&limit=1")
           echo "Supabase ping status: $STATUS"
           [ "$STATUS" = "200" ] && echo "Supabase is active." || { echo "Unexpected status: $STATUS"; exit 1; }
+
+      - name: Slack 알림 (성공)
+        if: success()
+        run: |
+          curl -s -X POST "https://slack.com/api/chat.postMessage" \
+            -H "Authorization: Bearer ${{ secrets.SLACK_BOT_TOKEN }}" \
+            -H "Content-type: application/json" \
+            -d '{"channel": "C0BTUMQ9R6X", "text": "✅ Supabase keep-alive 성공 (HTTP 200) — 프로젝트 정상 활성 상태입니다."}'
+
+      - name: Slack 알림 (실패)
+        if: failure()
+        run: |
+          curl -s -X POST "https://slack.com/api/chat.postMessage" \
+            -H "Authorization: Bearer ${{ secrets.SLACK_BOT_TOKEN }}" \
+            -H "Content-type: application/json" \
+            -d '{"channel": "C0BTUMQ9R6X", "text": "🚨 Supabase keep-alive 실패! 프로젝트가 정지됐을 수 있습니다.\n대시보드에서 복구 필요: https://supabase.com/dashboard"}'
