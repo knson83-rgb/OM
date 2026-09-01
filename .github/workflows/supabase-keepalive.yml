@@ -2,7 +2,7 @@ name: Supabase Keep-Alive
 
 on:
   schedule:
-    - cron: '0 1 * * 1,4'  # 매주 월·목 01:00 UTC (비활성 7일 제한 방지)
+    - cron: '0 1 */3 * *'  # 3일마다 01:00 UTC (비활성 7일 제한 방지)
   workflow_dispatch:
 
 jobs:
