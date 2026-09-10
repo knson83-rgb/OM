@@ -16,6 +16,7 @@ jobs:
 
       - name: Ping Supabase
         id: ping
+        continue-on-error: true  # 실패해도 이후 스텝 계속 실행
         run: |
           URL=$(grep -oP '(?<=url: ")[^"]+' config.js)
           KEY=$(grep -oP '(?<=key: ")[^"]+' config.js)
@@ -27,7 +28,7 @@ jobs:
           [ "$STATUS" = "200" ] && echo "Supabase is active." || { echo "Unexpected status: $STATUS"; exit 1; }
 
       - name: Keep repo active
-        if: success()
+        # Supabase 상태와 무관하게 항상 실행 — GitHub 워크플로우 비활성화 방지
         run: |
           git config user.email "action@github.com"
           git config user.name "GitHub Action"
@@ -35,7 +36,7 @@ jobs:
           git push
 
       - name: Slack 알림 (성공)
-        if: success()
+        if: steps.ping.outcome == 'success'
         run: |
           curl -s -X POST "https://slack.com/api/chat.postMessage" \
             -H "Authorization: Bearer ${{ secrets.SLACK_BOT_TOKEN }}" \
@@ -43,7 +44,7 @@ jobs:
             -d '{"channel": "C0BTUMQ9R6X", "text": "✅ Supabase keep-alive 성공 (HTTP 200) — 프로젝트 정상 활성 상태입니다."}'
 
       - name: Slack 알림 (실패)
-        if: failure()
+        if: steps.ping.outcome == 'failure'
         run: |
           curl -s -X POST "https://slack.com/api/chat.postMessage" \
             -H "Authorization: Bearer ${{ secrets.SLACK_BOT_TOKEN }}" \
